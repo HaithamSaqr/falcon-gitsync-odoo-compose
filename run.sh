@@ -58,7 +58,7 @@ echo ""
 
 # Clone project
 echo -e "${GREEN}[1/6]${NC} Cloning project..."
-git clone --depth=1 https://github.com/HaithamSaqr/odoo13amdind.git "$DESTINATION"
+git clone --depth=1 https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
 rm -rf "$DESTINATION/.git"
 
 # Create directories
