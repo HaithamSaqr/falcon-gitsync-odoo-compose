@@ -1,0 +1,9 @@
+etc/odoo-server.log
+postgresql/
+
+# SSH Keys - NEVER commit!
+keys/*
+!keys/.gitkeep
+*.pem
+*_key
+deploy_key*

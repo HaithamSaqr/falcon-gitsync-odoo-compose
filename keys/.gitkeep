@@ -1,0 +1,3 @@
+# This directory stores SSH deploy keys
+# Keys are generated using: ./setup-deploy-key.sh
+# NEVER commit actual keys to git!
