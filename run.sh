@@ -17,20 +17,22 @@ DESTINATION=""
 PORT=""
 CHAT=""
 ADDONS_REPO=""
+ADDONS_BRANCH="main"
 
 print_usage() {
-    echo "Usage: $0 --destination <path> --port <port> --chat <chat_port> [--addons-repo <git_ssh_url>]"
+    echo "Usage: $0 --destination <path> --port <port> --chat <chat_port> [--addons-repo <git_ssh_url>] [--addons-branch <branch>]"
     echo ""
     echo "Options:"
-    echo "  --destination   Installation directory (required)"
-    echo "  --port          Odoo web port (required)"
-    echo "  --chat          Odoo live chat port (required)"
-    echo "  --addons-repo   Git SSH URL for addons sync (optional)"
-    echo "                  Example: git@github.com:username/odoo-addons.git"
+    echo "  --destination     Installation directory (required)"
+    echo "  --port            Odoo web port (required)"
+    echo "  --chat            Odoo live chat port (required)"
+    echo "  --addons-repo     Git SSH URL for addons sync (optional)"
+    echo "  --addons-branch   Branch for addons repo (default: main)"
     echo ""
     echo "Examples:"
     echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013"
     echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013 --addons-repo git@github.com:user/addons.git"
+    echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013 --addons-repo git@github.com:user/addons.git --addons-branch 13.0"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -39,6 +41,7 @@ while [[ $# -gt 0 ]]; do
         --port) PORT="$2"; shift 2 ;;
         --chat) CHAT="$2"; shift 2 ;;
         --addons-repo) ADDONS_REPO="$2"; shift 2 ;;
+        --addons-branch) ADDONS_BRANCH="$2"; shift 2 ;;
         --help|-h) print_usage; exit 0 ;;
         *) echo -e "${RED}Error: Unknown option: $1${NC}"; print_usage; exit 1 ;;
     esac
@@ -57,8 +60,8 @@ echo -e "${BLUE}============================================${NC}"
 echo ""
 
 # Clone project
-echo -e "${GREEN}[1/6]${NC} Cloning project..."
-git clone --depth=1 https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
+echo -e "${GREEN}[1/6]${NC} Cloning project (branch: 13.0)..."
+git clone --depth=1 -b 13.0 https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
 rm -rf "$DESTINATION/.git"
 
 # Create directories
@@ -101,11 +104,13 @@ if [[ -n "$ADDONS_REPO" ]]; then
     echo "" >> "$DESTINATION/docker-compose.yml"
     cat "$DESTINATION/docker-compose.git-sync.yml" >> "$DESTINATION/docker-compose.yml"
 
-    # Update repo URL
+    # Update repo URL and branch
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
+        sed -i '' "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
     else
         sed -i "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
+        sed -i "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
     fi
 
     # Extract repo URL for display

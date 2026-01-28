@@ -2,7 +2,7 @@
     image: registry.k8s.io/git-sync/git-sync:v4.4.0
     environment:
       - GITSYNC_REPO=GIT_REPO_URL
-      - GITSYNC_REF=main
+      - GITSYNC_REF=ADDONS_BRANCH
       - GITSYNC_ROOT=/git
       - GITSYNC_LINK=current
       - GITSYNC_PERIOD=60s
