@@ -142,7 +142,7 @@ fi
 # Set permissions
 echo -e "${GREEN}[6/6]${NC} Setting permissions..."
 sudo chown -R "$USER:$USER" "$DESTINATION"
-find "$DESTINATION" -type f -exec chmod 644 {} \;
+find "$DESTINATION" -type f ! -path "$DESTINATION/keys/*" -exec chmod 644 {} \;
 find "$DESTINATION" -type d -exec chmod 755 {} \;
 [[ -f "$DESTINATION/keys/deploy_key" ]] && chmod 600 "$DESTINATION/keys/deploy_key"
 [[ -f "$DESTINATION/entrypoint.sh" ]] && chmod +x "$DESTINATION/entrypoint.sh"
