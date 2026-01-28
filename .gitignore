@@ -1,5 +1,28 @@
+# Database
 postgresql/
+
+# Odoo logs and data
 etc/odoo-server.log*
-etc/addons/
 etc/sessions/
 etc/filestore/
+
+# Addons (synced via git-sync)
+addons/*
+!addons/.gitkeep
+
+# SSH Keys - NEVER commit!
+keys/*
+!keys/.gitkeep
+*.pem
+*_key
+deploy_key*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
