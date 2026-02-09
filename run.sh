@@ -164,10 +164,13 @@ find "$DESTINATION" -type d -exec chmod 755 {} \;
 # Run Docker Compose
 echo ""
 echo -e "${GREEN}Starting Odoo $ODOO_VERSION...${NC}"
-if command -v docker-compose &> /dev/null; then
+if docker compose version &> /dev/null; then
+    docker compose -f "$DESTINATION/docker-compose.yml" up -d
+elif command -v docker-compose &> /dev/null; then
     docker-compose -f "$DESTINATION/docker-compose.yml" up -d
 else
-    docker compose -f "$DESTINATION/docker-compose.yml" up -d
+    echo -e "${RED}Error: Docker Compose not found. Please install Docker Compose.${NC}"
+    exit 1
 fi
 
 # Done
