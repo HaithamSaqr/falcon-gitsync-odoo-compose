@@ -4,7 +4,10 @@ set -euo pipefail
 # ===========================================
 # Falcon Git-Sync Odoo 19 Docker Compose
 # Branch: 19.0
+# Wrapped in main() for safe curl | bash usage
 # ===========================================
+
+main() {
 
 ODOO_VERSION="19"
 ODOO_BRANCH="19.0"
@@ -40,8 +43,8 @@ print_usage() {
     echo ""
     echo "Examples:"
     echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019"
-    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git"
-    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --addons-branch 19.0"
+    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --git-sync"
+    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --addons-branch 19.0 --git-sync"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -183,3 +186,7 @@ if [[ "$GIT_SYNC" == "true" ]] && [[ -n "$ADDONS_REPO" ]]; then
 echo -e "  ${BLUE}Addons Sync:${NC}     Every 60s from GitHub"
 fi
 echo ""
+
+}
+
+main "$@"
