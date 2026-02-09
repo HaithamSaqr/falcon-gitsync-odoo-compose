@@ -18,6 +18,7 @@ PORT=""
 CHAT=""
 ADDONS_REPO=""
 ADDONS_BRANCH="main"
+GIT_SYNC="false"
 
 print_usage() {
     echo "Usage: $0 --destination <path> --port <port> --chat <chat_port> [--addons-repo <git_ssh_url>] [--addons-branch <branch>]"
@@ -28,6 +29,7 @@ print_usage() {
     echo "  --chat            Odoo live chat port (required)"
     echo "  --addons-repo     Git SSH URL for addons sync (optional)"
     echo "  --addons-branch   Branch for addons repo (default: main)"
+    echo "  --git-sync        Enable git-sync container for auto-syncing addons"
     echo ""
     echo "Examples:"
     echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013"
@@ -42,6 +44,7 @@ while [[ $# -gt 0 ]]; do
         --chat) CHAT="$2"; shift 2 ;;
         --addons-repo) ADDONS_REPO="$2"; shift 2 ;;
         --addons-branch) ADDONS_BRANCH="$2"; shift 2 ;;
+        --git-sync) GIT_SYNC="true"; shift ;;
         --help|-h) print_usage; exit 0 ;;
         *) echo -e "${RED}Error: Unknown option: $1${NC}"; print_usage; exit 1 ;;
     esac
@@ -90,8 +93,8 @@ else
     sed -i "s/20013/$CHAT/g" "$DESTINATION/docker-compose.yml"
 fi
 
-# Setup Git-Sync if addons repo provided
-if [[ -n "$ADDONS_REPO" ]]; then
+# Setup Git-Sync if enabled and addons repo provided
+if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     echo -e "${GREEN}[5/6]${NC} Setting up Git-Sync..."
 
     # Generate Deploy Key
@@ -136,7 +139,7 @@ if [[ -n "$ADDONS_REPO" ]]; then
     read -p "Press ENTER after adding the key to GitHub..." < /dev/tty
     echo ""
 else
-    echo -e "${GREEN}[5/6]${NC} Skipping Git-Sync (no --addons-repo provided)..."
+    echo -e "${GREEN}[5/6]${NC} Skipping Git-Sync (use --addons-repo with --git-sync to enable)..."
 fi
 
 # Set permissions
@@ -166,7 +169,7 @@ echo -e "  ${BLUE}Odoo URL:${NC}        http://localhost:$PORT"
 echo -e "  ${BLUE}Master Password:${NC} minhng.info"
 echo -e "  ${BLUE}Live Chat Port:${NC}  $CHAT"
 echo -e "  ${BLUE}Installation:${NC}    $DESTINATION"
-if [[ -n "$ADDONS_REPO" ]]; then
+if [[ "$GIT_SYNC" == "true" ]] && [[ -n "$ADDONS_REPO" ]]; then
 echo -e "  ${BLUE}Addons Sync:${NC}     Every 60s from GitHub"
 fi
 echo ""
