@@ -141,7 +141,7 @@ if [[ -n "$ADDONS_REPO" ]]; then
     echo "3. Paste the key above"
     echo "4. Click 'Add key'"
     echo ""
-    read -p "Press ENTER after adding the key to GitHub..."
+    read -p "Press ENTER after adding the key to GitHub..." < /dev/tty
     echo ""
 else
     echo -e "${GREEN}[5/6]${NC} Skipping Git-Sync (no --addons-repo provided)..."
