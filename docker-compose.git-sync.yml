@@ -9,6 +9,7 @@
       - GITSYNC_PERIOD=60s
       - GITSYNC_SSH_KEY_FILE=/etc/git-secret/ssh
       - GITSYNC_SSH_KNOWN_HOSTS=false
+      - GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no
     volumes:
       - ./addons:/git
       - ./keys/deploy_key:/etc/git-secret/ssh:ro
