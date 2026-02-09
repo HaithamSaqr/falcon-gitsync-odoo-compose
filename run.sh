@@ -3,7 +3,10 @@ set -euo pipefail
 
 # ===========================================
 # Odoo 13 Docker Compose with Git-Sync
+# Wrapped in main() for safe curl | bash usage
 # ===========================================
+
+main() {
 
 # Colors
 RED='\033[0;31m'
@@ -33,8 +36,8 @@ print_usage() {
     echo ""
     echo "Examples:"
     echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013"
-    echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013 --addons-repo git@github.com:user/addons.git"
-    echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013 --addons-repo git@github.com:user/addons.git --addons-branch 13.0"
+    echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013 --addons-repo git@github.com:user/addons.git --git-sync"
+    echo "  $0 --destination /opt/odoo13 --port 10013 --chat 20013 --addons-repo git@github.com:user/addons.git --addons-branch 13.0 --git-sync"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -122,7 +125,7 @@ if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
 
     echo ""
     echo -e "${YELLOW}══════════════════════════════════════════════════════════${NC}"
-    echo -e "${YELLOW}  ⚠️  IMPORTANT: Add Deploy Key to GitHub${NC}"
+    echo -e "${YELLOW}  IMPORTANT: Add Deploy Key to GitHub${NC}"
     echo -e "${YELLOW}══════════════════════════════════════════════════════════${NC}"
     echo ""
     echo -e "${BLUE}Public Key:${NC}"
@@ -162,7 +165,7 @@ fi
 # Done
 echo ""
 echo -e "${GREEN}══════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}  ✅ Installation Complete!${NC}"
+echo -e "${GREEN}  Installation Complete!${NC}"
 echo -e "${GREEN}══════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "  ${BLUE}Odoo URL:${NC}        http://localhost:$PORT"
@@ -173,3 +176,7 @@ if [[ "$GIT_SYNC" == "true" ]] && [[ -n "$ADDONS_REPO" ]]; then
 echo -e "  ${BLUE}Addons Sync:${NC}     Every 60s from GitHub"
 fi
 echo ""
+
+}
+
+main "$@"
