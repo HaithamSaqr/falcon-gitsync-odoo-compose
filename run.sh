@@ -118,13 +118,15 @@ if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     echo "" >> "$DESTINATION/docker-compose.yml"
     cat "$DESTINATION/docker-compose.git-sync.yml" >> "$DESTINATION/docker-compose.yml"
 
-    # Update repo URL and branch
+    # Update repo URL, branch, and addons path for git-sync
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
         sed -i '' "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
+        sed -i '' "s|addons_path = /mnt/extra-addons|addons_path = /mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
     else
         sed -i "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
         sed -i "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
+        sed -i "s|addons_path = /mnt/extra-addons|addons_path = /mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
     fi
 
     # Extract repo URL for display
