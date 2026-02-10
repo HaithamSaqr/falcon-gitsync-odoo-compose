@@ -182,7 +182,7 @@ echo ""
 echo -e "  ${BLUE}Odoo URL:${NC}        http://localhost:$PORT"
 echo -e "  ${BLUE}Odoo Version:${NC}    $ODOO_VERSION"
 echo -e "  ${BLUE}PostgreSQL:${NC}      $PG_VERSION"
-echo -e "  ${BLUE}Master Password:${NC} minhng.info"
+echo -e "  ${BLUE}Master Password:${NC} HaithamSakr"
 echo -e "  ${BLUE}Live Chat Port:${NC}  $CHAT"
 echo -e "  ${BLUE}Installation:${NC}    $DESTINATION"
 if [[ "$GIT_SYNC" == "true" ]] && [[ -n "$ADDONS_REPO" ]]; then

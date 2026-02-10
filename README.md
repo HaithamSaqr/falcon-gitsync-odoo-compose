@@ -1,157 +1,204 @@
-# Installing Odoo 19.0 with one command (Supports multiple Odoo instances on one server).
+# Falcon Git-Sync Odoo Docker Compose
 
-## Quick Installation
+Production-ready Odoo 19 deployment with Docker Compose, featuring optional automatic addons synchronization from GitHub via git-sync.
 
-Install [docker](https://docs.docker.com/get-docker/) and [docker-compose](https://docs.docker.com/compose/install/) yourself, then run the following to set up first Odoo instance @ `localhost:10019` (default master password: `minhng.info`):
+## Features
 
-``` bash
-curl -s https://raw.githubusercontent.com/minhng92/odoo-19-docker-compose/master/run.sh | bash -s -- --destination odoo-one --port 10019 --chat 20019
-```
-and/or run the following to set up another Odoo instance @ `localhost:11019` (default master password: `minhng.info`):
+- **One-command deployment** via `curl | bash`
+- **Multiple instances** on the same server with different ports
+- **Optional git-sync** container for automatic addons synchronization from GitHub
+- **SSH deploy key** auto-generation for secure private repo access
+- **Supports Odoo 19** with PostgreSQL 18
 
-``` bash
-curl -s https://raw.githubusercontent.com/minhng92/odoo-19-docker-compose/master/run.sh | bash -s -- --destination odoo-two --port 11019 --chat 21019
-```
+## Quick Start
 
-Arguments:
-* `--destination`: Odoo deploy folder (e.g., **odoo-one**)
-* `--port`: Odoo port (e.g., **10019**)
-* `--chat`: Live chat port (e.g., **20019**)
+### Basic Installation (Odoo + PostgreSQL)
 
-If `curl` is not found, install it:
-
-``` bash
-$ sudo apt-get install curl
-# or
-$ sudo yum install curl
+```bash
+curl -sSL https://raw.githubusercontent.com/HaithamSaqr/falcon-gitsync-odoo-compose/19.0/run.sh | bash -s -- \
+  --destination /opt/odoo19 \
+  --port 10019 \
+  --chat 20019
 ```
 
-<p>
-<img src="screenshots/odoo-19-docker-compose.gif" width="100%">
-</p>
+### Installation with Git-Sync (Auto-sync addons from GitHub)
 
-## Usage
-
-Start the container:
-``` sh
-docker-compose up
-```
-Then open `localhost:10019` to access Odoo 19.
-
-- **If you get any permission issues**, change the folder permission to make sure that the container is able to access the directory:
-
-``` sh
-$ sudo chmod -R 777 addons
-$ sudo chmod -R 777 etc
-$ sudo chmod -R 777 postgresql
+```bash
+curl -sSL https://raw.githubusercontent.com/HaithamSaqr/falcon-gitsync-odoo-compose/19.0/run.sh | bash -s -- \
+  --destination /opt/odoo19 \
+  --port 10019 \
+  --chat 20019 \
+  --addons-repo git@github.com:user/addons.git \
+  --addons-branch 19.0 \
+  --git-sync
 ```
 
-- If you want to start the server with a different port, change **10019** to another value in **docker-compose.yml** inside the parent dir:
+### Multiple Instances
 
-```
-ports:
- - "10019:8069"
-```
+Run multiple Odoo instances on the same server by using different ports and destinations:
 
-- To run Odoo container in detached mode (be able to close terminal without stopping Odoo):
+```bash
+# Instance 1
+curl -sSL https://raw.githubusercontent.com/HaithamSaqr/falcon-gitsync-odoo-compose/19.0/run.sh | bash -s -- \
+  --destination /opt/odoo19-client1 \
+  --port 10019 \
+  --chat 20019
 
-```
-docker-compose up -d
-```
-
-- To Use a restart policy, i.e. configure the restart policy for a container, change the value related to **restart** key in **docker-compose.yml** file to one of the following:
-   - `no` =	Do not automatically restart the container. (the default)
-   - `on-failure[:max-retries]` =	Restart the container if it exits due to an error, which manifests as a non-zero exit code. Optionally, limit the number of times the Docker daemon attempts to restart the container using the :max-retries option.
-  - `always` =	Always restart the container if it stops. If it is manually stopped, it is restarted only when Docker daemon restarts or the container itself is manually restarted. (See the second bullet listed in restart policy details)
-  - `unless-stopped`	= Similar to always, except that when the container is stopped (manually or otherwise), it is not restarted even after Docker daemon restarts.
-```
- restart: always             # run as a service
+# Instance 2
+curl -sSL https://raw.githubusercontent.com/HaithamSaqr/falcon-gitsync-odoo-compose/19.0/run.sh | bash -s -- \
+  --destination /opt/odoo19-client2 \
+  --port 11019 \
+  --chat 21019
 ```
 
-- To increase maximum number of files watching from 8192 (default) to **524288**. In order to avoid error when we run multiple Odoo instances. This is an *optional step*. These commands are for Ubuntu user:
+## Parameters
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `--destination` | Yes | Installation directory (e.g., `/opt/odoo19`) |
+| `--port` | Yes | Odoo web port (e.g., `10019`) |
+| `--chat` | Yes | Odoo live chat / websocket port (e.g., `20019`) |
+| `--addons-repo` | No | Git SSH URL for addons repository |
+| `--addons-branch` | No | Branch name for addons repo (default: `main`) |
+| `--git-sync` | No | Enable git-sync container for automatic addons syncing |
+
+## Architecture
 
 ```
-$ if grep -qF "fs.inotify.max_user_watches" /etc/sysctl.conf; then echo $(grep -F "fs.inotify.max_user_watches" /etc/sysctl.conf); else echo "fs.inotify.max_user_watches = 524288" | sudo tee -a /etc/sysctl.conf; fi
-$ sudo sysctl -p    # apply new config immediately
-``` 
+                         +-------------------+
+                         |   Odoo 19 (Web)   |
+                         |   Port: 10019     |
+                         +--------+----------+
+                                  |
+                         +--------+----------+
+                         |  PostgreSQL 18    |
+                         |  (Database)       |
+                         +-------------------+
 
-## Custom addons
-
-The **addons/** folder contains custom addons. Just put your custom addons if you have any.
-
-## Odoo configuration & log
-
-* To change Odoo configuration, edit file: **etc/odoo.conf**.
-* Log file: **etc/odoo-server.log**
-* Default database password (**admin_passwd**) is `minhng.info`, please change it @ [etc/odoo.conf#L75](/etc/odoo.conf#L75)
-
-## Odoo container management
-
-**Run Odoo**:
-
-``` bash
-docker-compose up -d
+                         +-------------------+
+                         |  Git-Sync         |  (optional, --git-sync flag)
+                         |  Syncs every 60s  |
+                         +-------------------+
 ```
 
-**Restart Odoo**:
+### Directory Structure
 
-``` bash
-docker-compose restart
+```
+/opt/odoo19/
+├── docker-compose.yml          # Main compose configuration
+├── docker-compose.git-sync.yml # Git-sync service template
+├── entrypoint.sh               # Custom Odoo entrypoint
+├── etc/
+│   ├── odoo.conf               # Odoo configuration
+│   └── odoo-server.log         # Odoo log file
+├── addons/                     # Custom addons (synced by git-sync)
+├── postgresql/                 # PostgreSQL data
+└── keys/                       # SSH deploy keys (auto-generated)
+    ├── deploy_key
+    └── deploy_key.pub
 ```
 
-**Stop Odoo**:
+## Configuration
 
-``` bash
-docker-compose down
+### Odoo Configuration
+
+Edit `etc/odoo.conf` to customize Odoo settings.
+
+Key settings:
+- **Master Password**: `admin_passwd = HaithamSakr` (change this in production)
+- **Addons Path**: `addons_path = /mnt/extra-addons/current/addons`
+- **Log File**: `logfile = /etc/odoo/odoo-server.log`
+
+### Default Credentials
+
+| Setting | Default Value |
+|---------|---------------|
+| Master Password | `HaithamSakr` |
+| Database User | `odoo` |
+| Database Password | `odoo` |
+
+> **Important:** Change the master password and database credentials before using in production.
+
+## Container Management
+
+All commands should be run from the installation directory (e.g., `/opt/odoo19`).
+
+**Start:**
+```bash
+docker compose up -d
 ```
 
-## Live chat
+**Stop:**
+```bash
+docker compose down
+```
 
-In [docker-compose.yml#L20](docker-compose.yml#L20), we exposed port **20019** for live-chat on host.
+**Restart:**
+```bash
+docker compose restart
+```
 
-Configuring **nginx** to activate live chat feature (in production):
+**View Logs:**
+```bash
+docker compose logs -f odoo
+docker compose logs -f git-sync
+```
 
-``` conf
-#...
+## Git-Sync Setup
+
+When using `--git-sync`, the script will:
+
+1. Generate an SSH deploy key pair in the `keys/` directory
+2. Display the public key for you to add to your GitHub repository
+3. Add the git-sync service to `docker-compose.yml`
+4. Sync your addons repository every 60 seconds
+
+### Adding the Deploy Key to GitHub
+
+1. Go to your repository **Settings > Deploy keys**
+2. Click **Add deploy key**
+3. Paste the public key displayed during installation
+4. Click **Add key**
+
+## Nginx Reverse Proxy (Production)
+
+For production deployments behind Nginx:
+
+```nginx
 server {
-    #...
-    location /longpolling/ {
-        proxy_pass http://0.0.0.0:20019/longpolling/;
+    server_name odoo.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:10019;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
-    #...
+
+    location /websocket {
+        proxy_pass http://127.0.0.1:20019;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+    }
 }
-#...
 ```
 
-## docker-compose.yml
+## Available Branches
 
-* odoo:19
-* postgres:18
+| Branch | Odoo Version | PostgreSQL |
+|--------|-------------|------------|
+| `19.0` | Odoo 19 | PostgreSQL 18 |
+| `13.0` | Odoo 13 | PostgreSQL 12 |
 
-## Odoo 19.0 screenshots after successful installation.
+## Prerequisites
 
-<p align="center">
-<img src="screenshots/odoo-19-welcome-screenshot.jpg" width="50%">
-</p>
+- [Docker](https://docs.docker.com/get-docker/) (20.10+)
+- [Docker Compose](https://docs.docker.com/compose/install/) (v2 plugin recommended)
+- Git
+- Linux server (Ubuntu/Debian recommended) or macOS
 
-<p>
-<img src="screenshots/odoo-19-apps-screenshot.jpg" width="100%">
-</p>
+## License
 
-<p>
-<img src="screenshots/odoo-19-dashboard.jpg" width="100%">
-</p>
-
-<p>
-<img src="screenshots/odoo-19-sales-screen.jpg" width="100%">
-</p>
-
-<p>
-<img src="screenshots/odoo-19-product-form.jpg" width="100%">
-</p>
-
-## ☕ Buy Me a Coffee
-
-If you find this project helpful, consider buying me a coffee to support my work!
-
-<a href="https://buymeacoffee.com/minhng.info" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+MIT
