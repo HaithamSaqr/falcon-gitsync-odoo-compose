@@ -73,6 +73,23 @@ echo -e "${BLUE}  Odoo: $ODOO_VERSION | PostgreSQL: $PG_VERSION${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
+# Check Docker Hub login (the EE image is private)
+EE_IMAGE="haithamsakr/odoo:saas-19.2-ee"
+echo -e "${GREEN}[0/6]${NC} Checking Docker Hub authentication for private image..."
+if ! docker manifest inspect "$EE_IMAGE" >/dev/null 2>&1; then
+    echo -e "${YELLOW}  The image $EE_IMAGE is private and requires Docker Hub login.${NC}"
+    echo ""
+    echo -e "${BLUE}  Please run this command first, then re-run the installer:${NC}"
+    echo ""
+    echo -e "    docker login -u haithamsakr"
+    echo ""
+    echo -e "${BLUE}  (use a Personal Access Token from https://app.docker.com/settings/personal-access-tokens)${NC}"
+    echo ""
+    exit 1
+fi
+echo -e "${GREEN}  Authenticated. Image is reachable.${NC}"
+echo ""
+
 # Clone project
 echo -e "${GREEN}[1/6]${NC} Cloning project (branch: $ODOO_BRANCH)..."
 git clone --depth=1 -b "$ODOO_BRANCH" https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
