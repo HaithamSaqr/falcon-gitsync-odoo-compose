@@ -2,16 +2,16 @@
 set -euo pipefail
 
 # ===========================================
-# Falcon Git-Sync Odoo 19 Docker Compose
-# Branch: 19.0
-# Wrapped in main() for safe curl | bash usage
+# Falcon Git-Sync Odoo saas-19.2 Enterprise Edition
+# Branch: saas-19.2-ee
+# Image:  haithamsakr/odoo:saas-19.2-ee
 # ===========================================
 
 main() {
 
-ODOO_VERSION="19"
-ODOO_BRANCH="19.0"
-PG_VERSION="18"
+ODOO_VERSION="19.2-ee"
+ODOO_BRANCH="saas-19.2-ee"
+PG_VERSION="16"
 
 # Colors
 RED='\033[0;31m'
@@ -41,10 +41,13 @@ print_usage() {
     echo "  --addons-branch   Branch for addons repo (default: main)"
     echo "  --git-sync        Enable git-sync container for auto-syncing addons"
     echo ""
+    echo "Note: The Enterprise image is private. You must run 'docker login' before"
+    echo "      using this script so docker can pull haithamsakr/odoo:saas-19.2-ee."
+    echo ""
     echo "Examples:"
-    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019"
-    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --git-sync"
-    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --addons-branch 19.0 --git-sync"
+    echo "  $0 --destination /opt/odoo192ee --port 10193 --chat 20193"
+    echo "  $0 --destination /opt/odoo192ee --port 10193 --chat 20193 --addons-repo git@github.com:user/addons.git --git-sync"
+    echo "  $0 --destination /opt/odoo192ee --port 10193 --chat 20193 --addons-repo git@github.com:user/addons.git --addons-branch saas-19.2 --git-sync"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -81,6 +84,7 @@ rm -rf "$DESTINATION/.git"
 # Create directories
 echo -e "${GREEN}[2/6]${NC} Creating directories..."
 mkdir -p "$DESTINATION/postgresql"
+mkdir -p "$DESTINATION/odoo-data"
 mkdir -p "$DESTINATION/keys"
 
 # System configuration (Linux only)
@@ -97,11 +101,11 @@ fi
 # Update ports
 echo -e "${GREEN}[4/6]${NC} Configuring ports ($PORT, $CHAT)..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/10019/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i '' "s/20019/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/10193/$PORT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/20193/$CHAT/g" "$DESTINATION/docker-compose.yml"
 else
-    sed -i "s/10019/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i "s/20019/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/10193/$PORT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/20193/$CHAT/g" "$DESTINATION/docker-compose.yml"
 fi
 
 # Setup Git-Sync if enabled and addons repo provided
@@ -122,11 +126,11 @@ if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
         sed -i '' "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
-        sed -i '' "s|addons_path = /mnt/extra-addons|addons_path = /mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
+        sed -i '' "s|/mnt/extra-addons$|/mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
     else
         sed -i "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
         sed -i "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
-        sed -i "s|addons_path = /mnt/extra-addons|addons_path = /mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
+        sed -i "s|/mnt/extra-addons$|/mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
     fi
 
     # Extract repo URL for display
