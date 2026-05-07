@@ -135,6 +135,16 @@ else
     sed -i "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
 fi
 
+# Add platform: linux/amd64 to avoid exec format error on amd64 hosts
+echo -e "${GREEN}[4a/6]${NC} Setting platform to linux/amd64 for compatibility..."
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' '/^  db:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
+    sed -i '' '/^  odoo:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
+else
+    sed -i '/^  db:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
+    sed -i '/^  odoo:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
+fi
+
 # Setup Git-Sync if enabled and addons repo provided
 if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     echo -e "${GREEN}[5/6]${NC} Setting up Git-Sync..."
@@ -149,6 +159,9 @@ if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     if [[ -f "$DESTINATION/docker-compose.git-sync.yml" ]]; then
         echo "" >> "$DESTINATION/docker-compose.yml"
         cat "$DESTINATION/docker-compose.git-sync.yml" >> "$DESTINATION/docker-compose.yml"
+        
+        # Also add platform to git-sync service if present
+        sed -i '/^  git-sync:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml" 2>/dev/null || true
     else
         echo -e "${YELLOW}Warning: docker-compose.git-sync.yml not found, skipping git-sync integration${NC}"
     fi
