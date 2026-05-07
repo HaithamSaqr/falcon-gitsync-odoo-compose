@@ -55,11 +55,11 @@ case "$1" in
         if [[ "$1" == "scaffold" ]] ; then
             exec $ODOO_BIN "$@"
         else
-            exec $ODOO_BIN "$@" "${DB_ARGS[@]}"
+            exec $ODOO_BIN -c "$ODOO_RC" "$@" "${DB_ARGS[@]}"
         fi
         ;;
     -*)
-        exec $ODOO_BIN "$@" "${DB_ARGS[@]}"
+        exec $ODOO_BIN -c "$ODOO_RC" "$@" "${DB_ARGS[@]}"
         ;;
     *)
         exec "$@"
