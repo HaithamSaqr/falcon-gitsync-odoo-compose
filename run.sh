@@ -2,15 +2,15 @@
 set -euo pipefail
 
 # ===========================================
-# Falcon Git-Sync Odoo saas-19.2 Community Edition
-# Branch: saas-19.2-ce
-# Image:  haithamsakr/odoo:saas-19.2-ce
+# Falcon Git-Sync Odoo saas-19.2 Enterprise Edition
+# Branch: saas-19.2-ee
+# Image:  haithamsakr/odoo:saas-19.2-ee
 # ===========================================
 
 main() {
 
-ODOO_VERSION="19.2-ce"
-ODOO_BRANCH="saas-19.2-ce"
+ODOO_VERSION="19.2-ee"
+ODOO_BRANCH="saas-19.2-ee"
 PG_VERSION="16"
 
 # Colors
@@ -42,9 +42,8 @@ print_usage() {
     echo "  --git-sync        Enable git-sync container for auto-syncing addons"
     echo ""
     echo "Examples:"
-    echo "  $0 --destination /opt/odoo192ce --port 10192 --chat 20192"
-    echo "  $0 --destination /opt/odoo192ce --port 10192 --chat 20192 --addons-repo git@github.com:user/addons.git --git-sync"
-    echo "  $0 --destination /opt/odoo192ce --port 10192 --chat 20192 --addons-repo git@github.com:user/addons.git --addons-branch saas-19.2 --git-sync"
+    echo "  $0 --destination /opt/odoo19ee --port 11193 --chat 21193"
+    echo "  $0 --destination /opt/odoo19ee --port 11193 --chat 21193 --addons-repo git@github.com:user/addons.git --git-sync"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -73,7 +72,7 @@ echo -e "${BLUE}  Odoo: $ODOO_VERSION | PostgreSQL: $PG_VERSION${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
-# Check Docker Hub login (the EE image is private)
+# Check Docker Hub login for EE private image
 EE_IMAGE="haithamsakr/odoo:saas-19.2-ee"
 echo -e "${GREEN}[0/6]${NC} Checking Docker Hub authentication for private image..."
 if ! docker manifest inspect "$EE_IMAGE" >/dev/null 2>&1; then
@@ -90,10 +89,24 @@ fi
 echo -e "${GREEN}  Authenticated. Image is reachable.${NC}"
 echo ""
 
-# Clone project
+# Clone project from EE branch
 echo -e "${GREEN}[1/6]${NC} Cloning project (branch: $ODOO_BRANCH)..."
 git clone --depth=1 -b "$ODOO_BRANCH" https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
 rm -rf "$DESTINATION/.git"
+
+# Check if clone was successful
+if [[ ! -f "$DESTINATION/docker-compose.yml" ]]; then
+    echo -e "${RED}Error: Failed to clone repository or branch '$ODOO_BRANCH' does not exist${NC}"
+    exit 1
+fi
+
+# Update docker-compose.yml to use EE image explicitly
+echo -e "${GREEN}[1a/6]${NC} Ensuring EE image in docker-compose.yml..."
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    sed -i '' "s|haithamsakr/odoo:saas-19.2-ce|haithamsakr/odoo:saas-19.2-ee|g" "$DESTINATION/docker-compose.yml"
+else
+    sed -i "s|haithamsakr/odoo:saas-19.2-ce|haithamsakr/odoo:saas-19.2-ee|g" "$DESTINATION/docker-compose.yml"
+fi
 
 # Create directories
 echo -e "${GREEN}[2/6]${NC} Creating directories..."
@@ -133,18 +146,22 @@ if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     fi
 
     # Add git-sync service to docker-compose.yml
-    echo "" >> "$DESTINATION/docker-compose.yml"
-    cat "$DESTINATION/docker-compose.git-sync.yml" >> "$DESTINATION/docker-compose.yml"
+    if [[ -f "$DESTINATION/docker-compose.git-sync.yml" ]]; then
+        echo "" >> "$DESTINATION/docker-compose.yml"
+        cat "$DESTINATION/docker-compose.git-sync.yml" >> "$DESTINATION/docker-compose.yml"
+    else
+        echo -e "${YELLOW}Warning: docker-compose.git-sync.yml not found, skipping git-sync integration${NC}"
+    fi
 
     # Update repo URL, branch, and addons path for git-sync
     if [[ "$OSTYPE" == "darwin"* ]]; then
         sed -i '' "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
         sed -i '' "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
-        sed -i '' "s|/mnt/extra-addons$|/mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
+        sed -i '' "s|/mnt/extra-addons$|/mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf" 2>/dev/null || true
     else
         sed -i "s|GIT_REPO_URL|$ADDONS_REPO|g" "$DESTINATION/docker-compose.yml"
         sed -i "s|ADDONS_BRANCH|$ADDONS_BRANCH|g" "$DESTINATION/docker-compose.yml"
-        sed -i "s|/mnt/extra-addons$|/mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf"
+        sed -i "s|/mnt/extra-addons$|/mnt/extra-addons/current|g" "$DESTINATION/etc/odoo.conf" 2>/dev/null || true
     fi
 
     # Extract repo URL for display
@@ -175,19 +192,20 @@ fi
 
 # Set permissions
 echo -e "${GREEN}[6/6]${NC} Setting permissions..."
-sudo chown -R "$USER:$USER" "$DESTINATION"
-find "$DESTINATION" -type f ! -path "$DESTINATION/keys/*" -exec chmod 644 {} \;
-find "$DESTINATION" -type d -exec chmod 755 {} \;
+sudo chown -R "$USER:$USER" "$DESTINATION" 2>/dev/null || true
+find "$DESTINATION" -type f ! -path "$DESTINATION/keys/*" -exec chmod 644 {} \; 2>/dev/null || true
+find "$DESTINATION" -type d -exec chmod 755 {} \; 2>/dev/null || true
 [[ -f "$DESTINATION/keys/deploy_key" ]] && chmod 600 "$DESTINATION/keys/deploy_key"
 [[ -f "$DESTINATION/entrypoint.sh" ]] && chmod +x "$DESTINATION/entrypoint.sh"
 
 # Run Docker Compose
 echo ""
 echo -e "${GREEN}Starting Odoo $ODOO_VERSION...${NC}"
+cd "$DESTINATION"
 if docker compose version &> /dev/null; then
-    docker compose -f "$DESTINATION/docker-compose.yml" up -d
+    docker compose up -d
 elif command -v docker-compose &> /dev/null; then
-    docker-compose -f "$DESTINATION/docker-compose.yml" up -d
+    docker-compose up -d
 else
     echo -e "${RED}Error: Docker Compose not found. Please install Docker Compose.${NC}"
     exit 1
