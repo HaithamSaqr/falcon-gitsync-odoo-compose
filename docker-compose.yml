@@ -11,7 +11,7 @@ services:
       - ./postgresql:/var/lib/postgresql
 
   odoo:
-    image: haithamsakr/odoo:saas-19.2-ce
+    image: haithamsakr/odoo:saas-19.2-ee
     user: root
     depends_on:
       - db
