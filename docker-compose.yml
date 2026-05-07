@@ -1,13 +1,14 @@
 services:
   db:
     image: postgres:16
+    platform: linux/amd64
     environment:
       - POSTGRES_USER=odoo
       - POSTGRES_PASSWORD=odoo
       - POSTGRES_DB=postgres
     restart: always
     volumes:
-      - ./postgresql:/var/lib/postgresql/data   # أضفت /data عشان postgres
+      - ./postgresql:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U odoo"]
       interval: 10s
@@ -16,12 +17,13 @@ services:
 
   odoo:
     image: haithamsakr/odoo:saas-19.2-ee
+    platform: linux/amd64
     depends_on:
       db:
         condition: service_healthy
     ports:
-      - "10192:8069"
-      - "20192:8072"
+      - "11193:8069"
+      - "21193:8072"
     environment:
       - HOST=db
       - USER=odoo
@@ -33,4 +35,5 @@ services:
       - ./etc:/etc/odoo
       - ./odoo-data:/var/lib/odoo
     restart: always
-    command: ["/bin/bash", "/entrypoint.sh", "odoo"]
+    entrypoint: /bin/bash
+    command: /entrypoint.sh odoo
