@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts must keep LF endings even when checked out on Windows,
+# otherwise Linux containers refuse to execute them.
+*.sh text eol=lf
+entrypoint.sh text eol=lf

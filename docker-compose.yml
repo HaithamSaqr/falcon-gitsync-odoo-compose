@@ -16,7 +16,7 @@ services:
       retries: 5
 
   odoo:
-    image: haithamsakr/odoo:saas-19.2-ee
+    image: haithamsakr/odoo:saas-19.2-ce
     platform: linux/amd64
     depends_on:
       db:
@@ -36,4 +36,4 @@ services:
       - ./odoo-data:/var/lib/odoo
     restart: always
     entrypoint: /bin/bash
-    command: /entrypoint.sh odoo
+    command: /entrypoint.sh odoo -c /etc/odoo/odoo.conf
