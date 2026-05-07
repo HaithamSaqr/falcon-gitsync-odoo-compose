@@ -2,15 +2,15 @@
 set -euo pipefail
 
 # ===========================================
-# Falcon Git-Sync Odoo saas-19.2 Enterprise Edition
-# Branch: saas-19.2-ee
-# Image:  haithamsakr/odoo:saas-19.2-ee
+# Falcon Git-Sync Odoo saas-19.2 (Community Edition, local-friendly)
+# Branch: saas-19.2
+# Image:  haithamsakr/odoo:saas-19.2-ce
 # ===========================================
 
 main() {
 
-ODOO_VERSION="19.2-ee"
-ODOO_BRANCH="saas-19.2-ee"
+ODOO_VERSION="19.2"
+ODOO_BRANCH="saas-19.2"
 PG_VERSION="16"
 
 # Colors
@@ -72,24 +72,7 @@ echo -e "${BLUE}  Odoo: $ODOO_VERSION | PostgreSQL: $PG_VERSION${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
-# Check Docker Hub login for EE private image
-EE_IMAGE="haithamsakr/odoo:saas-19.2-ee"
-echo -e "${GREEN}[0/6]${NC} Checking Docker Hub authentication for private image..."
-if ! docker manifest inspect "$EE_IMAGE" >/dev/null 2>&1; then
-    echo -e "${YELLOW}  The image $EE_IMAGE is private and requires Docker Hub login.${NC}"
-    echo ""
-    echo -e "${BLUE}  Please run this command first, then re-run the installer:${NC}"
-    echo ""
-    echo -e "    docker login -u haithamsakr"
-    echo ""
-    echo -e "${BLUE}  (use a Personal Access Token from https://app.docker.com/settings/personal-access-tokens)${NC}"
-    echo ""
-    exit 1
-fi
-echo -e "${GREEN}  Authenticated. Image is reachable.${NC}"
-echo ""
-
-# Clone project from EE branch
+# Clone project (CE image is public, no Docker Hub login needed)
 echo -e "${GREEN}[1/6]${NC} Cloning project (branch: $ODOO_BRANCH)..."
 git clone --depth=1 -b "$ODOO_BRANCH" https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
 rm -rf "$DESTINATION/.git"
@@ -100,14 +83,6 @@ if [[ ! -f "$DESTINATION/docker-compose.yml" ]]; then
     exit 1
 fi
 
-# Update docker-compose.yml to use EE image explicitly
-echo -e "${GREEN}[1a/6]${NC} Ensuring EE image in docker-compose.yml..."
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s|haithamsakr/odoo:saas-19.2-ce|haithamsakr/odoo:saas-19.2-ee|g" "$DESTINATION/docker-compose.yml"
-else
-    sed -i "s|haithamsakr/odoo:saas-19.2-ce|haithamsakr/odoo:saas-19.2-ee|g" "$DESTINATION/docker-compose.yml"
-fi
-
 # Create directories
 echo -e "${GREEN}[2/6]${NC} Creating directories..."
 mkdir -p "$DESTINATION/postgresql"
@@ -115,35 +90,26 @@ mkdir -p "$DESTINATION/odoo-data"
 mkdir -p "$DESTINATION/keys"
 
 # System configuration (Linux only)
-if [[ "$OSTYPE" != "darwin"* ]]; then
-    echo -e "${GREEN}[3/6]${NC} Configuring system..."
+if [[ "$OSTYPE" != "darwin"* ]] && [[ "$OSTYPE" != "msys"* ]] && [[ "$OSTYPE" != "cygwin"* ]]; then
+    echo -e "${GREEN}[3/6]${NC} Configuring system (inotify watches)..."
     if ! grep -qF "fs.inotify.max_user_watches" /etc/sysctl.conf 2>/dev/null; then
         echo "fs.inotify.max_user_watches = 524288" | sudo tee -a /etc/sysctl.conf
     fi
     sudo sysctl -p 2>/dev/null || true
 else
-    echo -e "${GREEN}[3/6]${NC} Skipping system config (macOS)..."
+    echo -e "${GREEN}[3/6]${NC} Skipping system config (non-Linux host)..."
 fi
 
-# Update ports
+# Update ports (compose ships with 11193 / 21193 by default)
 echo -e "${GREEN}[4/6]${NC} Configuring ports ($PORT, $CHAT)..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/10192/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i '' "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/\"11193:8069\"/\"$PORT:8069\"/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/\"21193:8072\"/\"$CHAT:8072\"/g" "$DESTINATION/docker-compose.yml"
 else
-    sed -i "s/10192/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/\"11193:8069\"/\"$PORT:8069\"/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/\"21193:8072\"/\"$CHAT:8072\"/g" "$DESTINATION/docker-compose.yml"
 fi
-
-# Add platform: linux/amd64 to avoid exec format error on amd64 hosts
-echo -e "${GREEN}[4a/6]${NC} Setting platform to linux/amd64 for compatibility..."
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' '/^  db:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
-    sed -i '' '/^  odoo:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
-else
-    sed -i '/^  db:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
-    sed -i '/^  odoo:/a\    platform: linux/amd64' "$DESTINATION/docker-compose.yml"
-fi
+# Note: platform: linux/amd64 is already declared in docker-compose.yml on this branch.
 
 # Setup Git-Sync if enabled and addons repo provided
 if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
