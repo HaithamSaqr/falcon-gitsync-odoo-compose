@@ -18,6 +18,7 @@ services:
   odoo:
     image: haithamsakr/odoo:saas-19.2-ee
     platform: linux/amd64
+    user: root
     depends_on:
       db:
         condition: service_healthy
