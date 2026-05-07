@@ -128,11 +128,11 @@ fi
 # Update ports
 echo -e "${GREEN}[4/6]${NC} Configuring ports ($PORT, $CHAT)..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/10192/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i '' "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/11193/$PORT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/21193/$CHAT/g" "$DESTINATION/docker-compose.yml"
 else
-    sed -i "s/10192/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/11193/$PORT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/21193/$CHAT/g" "$DESTINATION/docker-compose.yml"
 fi
 
 # Setup Git-Sync if enabled and addons repo provided
