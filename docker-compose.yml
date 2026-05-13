@@ -11,13 +11,13 @@ services:
       - ./postgresql:/var/lib/postgresql
 
   odoo:
-    image: haithamsakr/odoo:saas-19.2-ce
+    image: odoo:19.0
     user: root
     depends_on:
       - db
     ports:
-      - "10192:8069"
-      - "20192:8072"
+      - "10019:8069"
+      - "20019:8072"
     tty: true
     command: --
     environment:

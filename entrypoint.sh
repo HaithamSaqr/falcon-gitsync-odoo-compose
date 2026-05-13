@@ -1,10 +1,10 @@
 #!/bin/bash
-# Falcon Git-Sync Odoo entrypoint - adapted for haithamsakr/odoo:saas-19.2 images.
-# The image already has odoo-bin under /opt/odoo/odoo and Python deps installed.
+# Falcon Git-Sync Odoo entrypoint - adapted for the official odoo:19.0 image.
+# The image already has the `odoo` command in PATH and Python deps installed.
 
 set -e
 
-ODOO_BIN="python3 /opt/odoo/odoo/odoo-bin"
+ODOO_BIN="odoo"
 ODOO_RC=/etc/odoo/odoo.conf
 
 # Postgres connection defaults from env

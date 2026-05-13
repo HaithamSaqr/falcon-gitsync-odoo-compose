@@ -2,15 +2,15 @@
 set -euo pipefail
 
 # ===========================================
-# Falcon Git-Sync Odoo saas-19.2 Community Edition
-# Branch: saas-19.2-ce
-# Image:  haithamsakr/odoo:saas-19.2-ce
+# Falcon Git-Sync Odoo 19.0 Community Edition
+# Branch: 19.0
+# Image:  odoo:19.0 (official Docker Hub image)
 # ===========================================
 
 main() {
 
-ODOO_VERSION="19.2-ce"
-ODOO_BRANCH="saas-19.2-ce"
+ODOO_VERSION="19.0"
+ODOO_BRANCH="19.0"
 PG_VERSION="16"
 
 # Colors
@@ -42,9 +42,9 @@ print_usage() {
     echo "  --git-sync        Enable git-sync container for auto-syncing addons"
     echo ""
     echo "Examples:"
-    echo "  $0 --destination /opt/odoo192ce --port 10192 --chat 20192"
-    echo "  $0 --destination /opt/odoo192ce --port 10192 --chat 20192 --addons-repo git@github.com:user/addons.git --git-sync"
-    echo "  $0 --destination /opt/odoo192ce --port 10192 --chat 20192 --addons-repo git@github.com:user/addons.git --addons-branch saas-19.2 --git-sync"
+    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019"
+    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --git-sync"
+    echo "  $0 --destination /opt/odoo19 --port 10019 --chat 20019 --addons-repo git@github.com:user/addons.git --addons-branch 19.0 --git-sync"
 }
 
 while [[ $# -gt 0 ]]; do
@@ -73,58 +73,41 @@ echo -e "${BLUE}  Odoo: $ODOO_VERSION | PostgreSQL: $PG_VERSION${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo ""
 
-# Check Docker Hub login (the EE image is private)
-EE_IMAGE="haithamsakr/odoo:saas-19.2-ee"
-echo -e "${GREEN}[0/6]${NC} Checking Docker Hub authentication for private image..."
-if ! docker manifest inspect "$EE_IMAGE" >/dev/null 2>&1; then
-    echo -e "${YELLOW}  The image $EE_IMAGE is private and requires Docker Hub login.${NC}"
-    echo ""
-    echo -e "${BLUE}  Please run this command first, then re-run the installer:${NC}"
-    echo ""
-    echo -e "    docker login -u haithamsakr"
-    echo ""
-    echo -e "${BLUE}  (use a Personal Access Token from https://app.docker.com/settings/personal-access-tokens)${NC}"
-    echo ""
-    exit 1
-fi
-echo -e "${GREEN}  Authenticated. Image is reachable.${NC}"
-echo ""
-
 # Clone project
-echo -e "${GREEN}[1/6]${NC} Cloning project (branch: $ODOO_BRANCH)..."
+echo -e "${GREEN}[1/5]${NC} Cloning project (branch: $ODOO_BRANCH)..."
 git clone --depth=1 -b "$ODOO_BRANCH" https://github.com/HaithamSaqr/falcon-gitsync-odoo-compose.git "$DESTINATION"
 rm -rf "$DESTINATION/.git"
 
 # Create directories
-echo -e "${GREEN}[2/6]${NC} Creating directories..."
+echo -e "${GREEN}[2/5]${NC} Creating directories..."
 mkdir -p "$DESTINATION/postgresql"
 mkdir -p "$DESTINATION/odoo-data"
 mkdir -p "$DESTINATION/keys"
 
 # System configuration (Linux only)
 if [[ "$OSTYPE" != "darwin"* ]]; then
-    echo -e "${GREEN}[3/6]${NC} Configuring system..."
+    echo -e "${GREEN}[3/5]${NC} Configuring system..."
     if ! grep -qF "fs.inotify.max_user_watches" /etc/sysctl.conf 2>/dev/null; then
         echo "fs.inotify.max_user_watches = 524288" | sudo tee -a /etc/sysctl.conf
     fi
     sudo sysctl -p 2>/dev/null || true
 else
-    echo -e "${GREEN}[3/6]${NC} Skipping system config (macOS)..."
+    echo -e "${GREEN}[3/5]${NC} Skipping system config (macOS)..."
 fi
 
 # Update ports
-echo -e "${GREEN}[4/6]${NC} Configuring ports ($PORT, $CHAT)..."
+echo -e "${GREEN}[4/5]${NC} Configuring ports ($PORT, $CHAT)..."
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    sed -i '' "s/10192/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i '' "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/10019/$PORT/g" "$DESTINATION/docker-compose.yml"
+    sed -i '' "s/20019/$CHAT/g" "$DESTINATION/docker-compose.yml"
 else
-    sed -i "s/10192/$PORT/g" "$DESTINATION/docker-compose.yml"
-    sed -i "s/20192/$CHAT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/10019/$PORT/g" "$DESTINATION/docker-compose.yml"
+    sed -i "s/20019/$CHAT/g" "$DESTINATION/docker-compose.yml"
 fi
 
 # Setup Git-Sync if enabled and addons repo provided
 if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
-    echo -e "${GREEN}[5/6]${NC} Setting up Git-Sync..."
+    echo -e "${GREEN}[5/5]${NC} Setting up Git-Sync..."
 
     # Generate Deploy Key
     if [[ ! -f "$DESTINATION/keys/deploy_key" ]]; then
@@ -170,11 +153,11 @@ if [[ -n "$ADDONS_REPO" ]] && [[ "$GIT_SYNC" == "true" ]]; then
     read -p "Press ENTER after adding the key to GitHub..." < /dev/tty
     echo ""
 else
-    echo -e "${GREEN}[5/6]${NC} Skipping Git-Sync (use --addons-repo with --git-sync to enable)..."
+    echo -e "${GREEN}[5/5]${NC} Skipping Git-Sync (use --addons-repo with --git-sync to enable)..."
 fi
 
 # Set permissions
-echo -e "${GREEN}[6/6]${NC} Setting permissions..."
+echo -e "${GREEN}Setting permissions...${NC}"
 sudo chown -R "$USER:$USER" "$DESTINATION"
 find "$DESTINATION" -type f ! -path "$DESTINATION/keys/*" -exec chmod 644 {} \;
 find "$DESTINATION" -type d -exec chmod 755 {} \;
