@@ -1,0 +1,30 @@
+  backup-manager:
+    image: haithamsakr/postgrebakupmanager:latest
+    container_name: __BM_CONTAINER__
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - PGHOST=db
+      - PGPORT=5432
+      - PGUSER=odoo
+      - PGPASSWORD=odoo
+      - ODOO_DB=__BM_ODOO_DB__
+      - ODOO_CONTAINER=__BM_ODOO_CONTAINER__
+      - ODOO_PORT_INTERNAL=8069
+      - FILESTORE_OWNER=root:root
+      - BACKUP_DIR=/backups
+      - FILESTORE_ROOT=/filestore_root
+      - BM_ADMIN_USER=admin
+      - BM_ADMIN_PASSWORD=__BM_ADMIN_PASS__
+      - BM_SESSION_SECRET=__BM_SECRET__
+      - BM_RETENTION=7
+      - USE_X_ACCEL=false
+    volumes:
+      - ./dbbak:/backups
+      - ./odoo-data/filestore:/filestore_root
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      # ponytail: localhost-only on purpose — this tool can drop/restore the DB.
+      # Reach it over an SSH tunnel, or put Cloudflare Access / nginx+auth in front.
+      - "127.0.0.1:__BM_PORT__:8000"
