@@ -25,12 +25,31 @@ ODOO_RC=/etc/odoo/odoo.conf
 # the reason is still on screen.
 #
 # pip skips already-satisfied requirements, so this is cheap on every restart but the first.
+#
+# The retry exists because of a Debian/pip collision. Some packages in the odoo image come
+# from apt, not pip (typing_extensions, packaging...). When a requirement needs a newer one
+# — pydantic wants typing-extensions >= 4.12, the image ships 4.10 — pip tries to uninstall
+# the apt copy first, cannot find its RECORD file, and dies:
+#
+#   ERROR: Cannot uninstall typing_extensions 4.10.0, RECORD file not found.
+#          Hint: The package was installed by debian.
+#
+# --ignore-installed skips that uninstall step and installs the new version alongside. It
+# wins at import time because pip's target (/usr/local/lib/.../dist-packages) precedes
+# Debian's (/usr/lib/python3/dist-packages) on sys.path.
+#
+# It is only a fallback: passing it always would force a full reinstall of pandas, numpy &
+# co. on every single boot. The plain attempt runs first and, once everything is in place,
+# succeeds instantly on later restarts.
 if [ -f /etc/odoo/requirements.txt ]; then
     echo "[entrypoint] Installing Python requirements from /etc/odoo/requirements.txt ..."
     if ! pip3 install --break-system-packages -r /etc/odoo/requirements.txt; then
-        echo "[entrypoint] FATAL: could not install the Python requirements above." >&2
-        echo "[entrypoint] Refusing to start: Odoo would fail later, mid database creation." >&2
-        exit 1
+        echo "[entrypoint] Retrying with --ignore-installed (an apt-managed package is in the way)..."
+        if ! pip3 install --break-system-packages --ignore-installed -r /etc/odoo/requirements.txt; then
+            echo "[entrypoint] FATAL: could not install the Python requirements above." >&2
+            echo "[entrypoint] Refusing to start: Odoo would fail later, mid database creation." >&2
+            exit 1
+        fi
     fi
     echo "[entrypoint] Python requirements OK."
 fi
