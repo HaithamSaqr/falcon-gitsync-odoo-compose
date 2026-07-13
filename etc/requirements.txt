@@ -1,8 +1,25 @@
 # -----------------------
 # | Add Python packages |
 # -----------------------
-# To install below packages at startup, uncomment this line in "docker-compose.yml" file!
-# - ./entrypoint.sh:/entrypoint.sh
-# then down the docker container ($ docker-compose down) and up it again ($ docker-compose up -d).
+# Installed at startup by entrypoint.sh (already mounted in docker-compose.yml).
+# After editing: docker compose down && docker compose up -d
 # -----------------------
-# paramiko==2.7.2 # for auto_backup module
+
+# Required by the auto-installed addons. Without these, creating a database FAILS:
+# Odoo checks a module's external_dependencies before installing it, and the whole
+# creation is one transaction — one missing package aborts the lot.
+#
+# The official odoo:19.0 image already ships geoip2 (for `website`), so it is not
+# listed here. None of the packages below are in it.
+
+pandas                  # fv_hrms_dashboard
+pydantic>=2.0.0         # fv_Approval, fv_api_auth, base_rest_pydantic
+
+# OCA base_rest stack (pulled in by fv_Approval -> base_rest / base_rest_pydantic)
+apispec
+cerberus
+cachetools
+pyquerystring
+parse-accept-language
+
+# paramiko==2.7.2       # for auto_backup module
