@@ -13,9 +13,26 @@ ODOO_RC=/etc/odoo/odoo.conf
 : ${USER:=${DB_ENV_POSTGRES_USER:=${POSTGRES_USER:='odoo'}}}
 : ${PASSWORD:=${DB_ENV_POSTGRES_PASSWORD:=${POSTGRES_PASSWORD:='odoo'}}}
 
-# Optional: install extra Python packages from requirements.txt if present.
+# Python packages required by the addons (pandas, pydantic, the OCA base_rest stack...).
+#
+# This used to end in `|| true`, which swallowed any failure: Odoo then started as if all
+# was well and only died much later, halfway through creating a database, with an opaque
+# "external dependency is not met" — the cause long gone from the logs.
+#
+# Odoo refuses to install a module whose external_dependencies are unmet, and database
+# creation is a single transaction: one missing package aborts the whole thing. A server
+# that cannot install its own addons is not worth starting, so fail here, loudly, where
+# the reason is still on screen.
+#
+# pip skips already-satisfied requirements, so this is cheap on every restart but the first.
 if [ -f /etc/odoo/requirements.txt ]; then
-    pip3 install --break-system-packages -r /etc/odoo/requirements.txt || true
+    echo "[entrypoint] Installing Python requirements from /etc/odoo/requirements.txt ..."
+    if ! pip3 install --break-system-packages -r /etc/odoo/requirements.txt; then
+        echo "[entrypoint] FATAL: could not install the Python requirements above." >&2
+        echo "[entrypoint] Refusing to start: Odoo would fail later, mid database creation." >&2
+        exit 1
+    fi
+    echo "[entrypoint] Python requirements OK."
 fi
 
 # Optional: install logrotate (skip silently if apt is unavailable / offline).
